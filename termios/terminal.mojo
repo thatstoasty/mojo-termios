@@ -3,7 +3,7 @@ import std.sys._libc as libc
 from std.sys import CompilationTarget
 from std.ffi import get_errno, ErrNo
 
-import termios.c
+from termios import c
 
 
 @fieldwise_init

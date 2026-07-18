@@ -1,6 +1,6 @@
 """Helpers for putting a TTY into raw or cbreak mode."""
 from std.ffi import ErrNo, external_call
-import termios.c
+from termios import c
 from termios.c import ControlFlag, InputFlag, LocalFlag, OutputFlag, SpecialCharacter
 from termios.terminal import FlowOption, FlushOption, WhenOption, tcgetattr, tcsetattr
 

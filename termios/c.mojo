@@ -1,7 +1,6 @@
 """Low-level C bindings for POSIX termios and TTY system calls."""
-from std.collections import BitSet
 from std.sys import CompilationTarget
-from std.ffi import c_char, c_int, c_size_t, external_call, get_errno, ErrNo
+from std.ffi import c_int, external_call, get_errno, ErrNo
 from std.utils import StaticTuple
 from std.memory import MutPointer, ImmutPointer
 
