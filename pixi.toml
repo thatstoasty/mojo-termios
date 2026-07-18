@@ -1,0 +1,39 @@
+[workspace]
+description = "mojo-termios provides FFI bindings for Termios."
+authors = ["Mikhail Tavarez <miktavarez@gmail.com>"]
+channels = ["conda-forge", "https://conda.modular.com/max"]
+platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+homepage = "https://github.com/thatstoasty/mojo-termios"
+repository = "https://github.com/thatstoasty/mojo-termios"
+preview = ["pixi-build"]
+
+[tasks]
+tests = "sh -c 'find test -name \"test_*.mojo\" -exec mojo -D ASSERT=all -I . {} \\;'"
+examples = "sh -c 'find examples -name \"*.mojo\" -exec mojo -D ASSERT=all -I . {} \\;'"
+
+# Linting and Formatting
+lint_docs = "mojo doc --Werror --diagnose-missing-doc-strings -o /dev/null ./termios"
+mojo_format = "mojo format termios --line-length 120"
+format = [{ task = "mojo_format" }]
+
+[package]
+name = "termios"
+version = "0.1.0"
+
+[package.build]
+backend = { name = "pixi-build-mojo", version = "0.1.*" }
+
+[dependencies]
+mojo = ">=1.0.0b2,<2"
+
+[package.host-dependencies]
+mojo-compiler = ">=1.0.0b2,<1.0.0b3"
+
+[package.build-dependencies]
+mojo-compiler = ">=1.0.0b2,<1.0.0b3"
+
+[package.run-dependencies]
+mojo-compiler = ">=1.0.0b2,<1.0.0b3"
