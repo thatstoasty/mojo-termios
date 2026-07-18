@@ -1,8 +1,6 @@
 """Low-level C bindings for POSIX termios and TTY system calls."""
 from std.collections import BitSet
 from std.sys import CompilationTarget
-from std.time.time import _CTimeSpec
-
 from std.ffi import c_char, c_int, c_size_t, external_call, get_errno, ErrNo
 from std.utils import StaticTuple
 from std.memory import MutPointer, ImmutPointer
@@ -38,6 +36,48 @@ comptime tcflag_t = SIMD[(DType.uint32, DType.uint64)[Int(CompilationTarget.is_m
 """If `CompilationTarget.is_macos()` is true, use `UInt64`, otherwise use `UInt32`."""
 comptime c_speed_t = UInt64
 """C speed type."""
+
+# Constants
+comptime _NSEC_PER_USEC = 1000
+comptime _NSEC_PER_MSEC = 1_000_000
+comptime _USEC_PER_MSEC = 1000
+comptime _MSEC_PER_SEC = 1000
+comptime _NSEC_PER_SEC = _NSEC_PER_USEC * _USEC_PER_MSEC * _MSEC_PER_SEC
+
+
+@fieldwise_init
+struct _CTimeSpec(Defaultable, TrivialRegisterPassable, Writable):
+    """C Time Struct."""
+
+    var tv_sec: Int  # Seconds
+    """Value in seconds."""
+    var tv_subsec: Int  # subsecond (nanoseconds on linux and usec on mac)
+    """Value in nanoseconds on Linux, and microseconds on Mac."""
+
+    def __init__(out self):
+        """Construct a CTimeSpec struct."""
+        self.tv_sec = 0
+        self.tv_subsec = 0
+
+    def as_nanoseconds(self) -> Int:
+        """Calculates the time in nanoseconds.
+
+        Returns:
+            The time in nanoseconds.
+        """
+        comptime if CompilationTarget.is_linux():
+            return self.tv_sec * _NSEC_PER_SEC + self.tv_subsec
+        else:
+            return self.tv_sec * _NSEC_PER_SEC + self.tv_subsec * _NSEC_PER_USEC
+
+    @no_inline
+    def write_to(self, mut writer: Some[Writer]):
+        """Writes the time in nanoseconds to the writer.
+
+        Args:
+            writer: The writer to write to.
+        """
+        writer.write(self.as_nanoseconds(), "ns")
 
 
 @fieldwise_init
@@ -191,7 +231,7 @@ struct SpecialCharacter(TrivialRegisterPassable):
 
 
 @fieldwise_init
-struct Termios(Copyable, TrivialRegisterPassable, Writable):
+struct Termios(TrivialRegisterPassable, Writable):
     """Termios libc."""
 
     comptime _CONTROL_CHARACTER_WIDTH = 20 if CompilationTarget.is_macos() else 32
@@ -432,156 +472,3 @@ def cfmakeraw[origin: MutOrigin](termios_p: Pointer[mut=True, Termios, origin]):
 #         winsize_p: Pointer to a winsize struct.
 #     """
 #     return external_call["tcsetwinsize", c_int, c_int, UnsafePointer[winsize]](fd, winsize_p)
-
-
-def ttyname(fd: c_int) -> Optional[MutExternalPointer[c_char]]:
-    """Libc POSIX `ttyname` function.
-
-    Get the name of the terminal associated with the file descriptor `fd`.
-
-    Args:
-        fd: File descriptor.
-
-    Returns:
-        A pointer to a string containing the name of the terminal.
-
-    #### C Function:
-    ```c
-    char *ttyname(int fd);
-    ```
-
-    #### Notes:
-    Reference: https://man7.org/linux/man-pages/man3/ttyname.3p.html.
-    """
-    return external_call["ttyname", Optional[MutExternalPointer[c_char]], type_of(fd)](fd)
-
-
-def read[
-    origin: MutOrigin, //
-](fd: c_int, buf: MutUnsafePointer[NoneType, origin], size: c_size_t) raises ErrNo -> c_int:
-    """Libc POSIX `read` function.
-
-    Read `size` bytes from file descriptor `fd` into the buffer `buf`.
-
-    Args:
-        fd: A File Descriptor.
-        buf: A pointer to a buffer to store the read data.
-        size: The number of bytes to read.
-
-    Returns:
-        The number of bytes read or -1 in case of failure.
-
-    #### C Function:
-    ```c
-    ssize_t read(int fildes, void *buf, size_t nbyte);
-    ```
-
-    #### Notes:
-    Reference: https://man7.org/linux/man-pages/man3/read.3p.html.
-
-    Raises:
-        ErrNo: The errno value if the `read()` call fails.
-    """
-    var result = external_call["read", c_int, type_of(fd), type_of(buf), type_of(size)](fd, buf, size)
-    if result == -1:
-        raise get_errno()
-    return result
-
-
-comptime FileDescriptorBitSet = BitSet[1024]
-"""A BitSet type for file descriptors."""
-
-
-@fieldwise_init
-struct _TimeValue(Copyable, TrivialRegisterPassable):
-    var seconds: time_t
-    var microseconds: suseconds_t
-
-
-def _select(
-    nfds: c_int,
-    readfds: MutPointer[FileDescriptorBitSet, ...],
-    writefds: MutPointer[BitSet[1], ...],
-    exceptfds: MutPointer[BitSet[1], ...],
-    timeout: MutPointer[_TimeValue, ...],
-) -> c_int:
-    """Libc POSIX `select` function.
-
-    Args:
-        nfds: The highest-numbered file descriptor in any of the three sets, plus 1.
-        readfds: A pointer to the set of file descriptors to read from.
-        writefds: A pointer to the set of file descriptors to write to.
-        exceptfds: A pointer to the set of file descriptors to check for exceptions.
-        timeout: A pointer to a TimeValue struct to set a timeout.
-
-    Returns:
-        The number of file descriptors in the sets or -1 in case of failure.
-
-    #### C Function:
-    ```c
-    int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
-    ```
-
-    #### Notes:
-    Reference: https://man7.org/linux/man-pages/man2/select.2.html
-    """
-    return external_call[
-        "select",
-        c_int,  # FnName, RetType
-    ](nfds, readfds, writefds, exceptfds, timeout)
-
-
-def select(
-    highest_fd: c_int,
-    mut read_fds: FileDescriptorBitSet,
-    mut write_fds: BitSet[1],
-    mut except_fds: BitSet[1],
-    mut timeout: _TimeValue,
-) raises -> None:
-    """Libc POSIX `select` function.
-
-    Args:
-        highest_fd: The highest-numbered file descriptor in any of the three sets, plus 1.
-        read_fds: A pointer to the set of file descriptors to read from.
-        write_fds: A pointer to the set of file descriptors to write to.
-        except_fds: A pointer to the set of file descriptors to check for exceptions.
-        timeout: A pointer to a TimeValue struct to set a timeout.
-
-    Raises:
-        Error: [EABADF] An invalid file descriptor was given in one of the sets.
-        Error: [EINTR] A signal was caught.
-        Error: [EINVAL] nfds is negative or exceeds the RLIMIT_NOFILE resource limit
-        Error: [ENOMEM] Unable to allocate memory for internal tables.
-        Error: [UNKNOWN] Unknown error occurred when calling C's `select` function.
-        Error: Select has timed out while waiting for file descriptors to become ready.
-
-    #### C Function Signature:
-    ```c
-    int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
-    ```
-
-    #### Reference
-    https://man7.org/linux/man-pages/man2/select.2.html.
-    """
-    var result = _select(
-        highest_fd,
-        Pointer(to=read_fds),
-        Pointer(to=write_fds),
-        Pointer(to=except_fds),
-        Pointer(to=timeout),
-    )
-
-    if result == -1:
-        var errno = c.get_errno()
-        if errno == errno.EBADF:
-            raise Error("[EBADF] An invalid file descriptor was given in one of the sets.")
-        elif errno == errno.EINTR:
-            raise Error("[EINTR] A signal was caught.")
-        elif errno == errno.EINVAL:
-            raise Error("[EINVAL] nfds is negative or exceeds the RLIMIT_NOFILE resource limit.")
-        elif errno == errno.ENOMEM:
-            raise Error("[ENOMEM] Unable to allocate memory for internal tables.")
-        else:
-            raise Error("[UNKNOWN] Unknown error occurred.")
-    elif result == 0:
-        raise Error("Select has timed out while waiting for file descriptors to become ready.")

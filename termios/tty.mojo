@@ -1,6 +1,6 @@
 """Helpers for putting a TTY into raw or cbreak mode."""
+from std.ffi import ErrNo, external_call
 import termios.c
-from std.ffi import external_call
 from termios.c import ControlFlag, InputFlag, LocalFlag, OutputFlag, SpecialCharacter
 from termios.terminal import FlowOption, FlushOption, WhenOption, tcgetattr, tcsetattr
 
@@ -89,7 +89,7 @@ def cfmakecbreak(mut mode: c.Termios):
     mode.c_cc[SpecialCharacter.VTIME.value] = 0
 
 
-def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises -> c.Termios:
+def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises ErrNo -> c.Termios:
     """Set terminal to raw mode.
 
     Args:
@@ -97,7 +97,7 @@ def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raise
         when: When to apply the changes. Default is TCSAFLUSH.
 
     Raises:
-        Error: If getting or setting terminal attributes fails via C's `tcgetattr` or `tcsetattr`.
+        ErrNo: If getting or setting terminal attributes fails via C's `tcgetattr` or `tcsetattr`.
 
     Returns:
         The original terminal attributes, and an error if any.
@@ -110,7 +110,7 @@ def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raise
     return mode
 
 
-def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises -> c.Termios:
+def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises ErrNo -> c.Termios:
     """Set terminal to cbreak mode.
 
     Args:
@@ -118,7 +118,7 @@ def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) ra
         when: When to apply the changes. Default is TCSAFLUSH.
 
     Raises:
-        Error: If getting or setting terminal attributes fails via C's `tcgetattr` or `tcsetattr`.
+        ErrNo: If getting or setting terminal attributes fails via C's `tcgetattr` or `tcsetattr`.
 
     Returns:
         The original terminal attributes, and an error if any.
@@ -131,20 +131,17 @@ def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) ra
     return mode
 
 
-def is_terminal_raw(file_descriptor: FileDescriptor) raises -> Bool:
+def is_terminal_raw(file_descriptor: FileDescriptor) raises ErrNo -> Bool:
     """Checks if a terminal is in raw mode.
 
     Args:
         file_descriptor: The file descriptor of the terminal to check.
 
     Raises:
-        Error: If getting terminal attributes fails via C's `tcgetattr`.
+        ErrNo: If getting terminal attributes fails via C's `tcgetattr`.
 
     Returns:
         True if the terminal is in raw mode, False otherwise.
     """
     var state = tcgetattr(file_descriptor)
-    if not (state.c_lflag & LocalFlag.ICANON.value) and not (state.c_lflag & LocalFlag.ECHO.value):
-        return True
-
-    return False
+    return (state.c_lflag & LocalFlag.ICANON.value) and not (state.c_lflag & LocalFlag.ECHO.value)

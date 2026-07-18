@@ -15,5 +15,5 @@ including their handling of input (stdin) and output (stdout and stderr) by mani
 the termios structure and using functions like `tcgetattr()` and `tcsetattr()`.
 """
 from termios.c import ControlFlag, InputFlag, LocalFlag, OutputFlag, SpecialCharacter, Termios
-from termios.terminal import tcdrain, tcflow, tcflush, tcgetattr, tcsendbreak, tcsetattr, tty_name
+from termios.terminal import tcdrain, tcflow, tcflush, tcgetattr, tcsendbreak, tcsetattr
 from termios.tty import FlowOption, FlushOption, WhenOption, cfmakecbreak, cfmakeraw, set_cbreak, set_raw
