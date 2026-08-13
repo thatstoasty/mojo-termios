@@ -2,7 +2,7 @@
 from std.sys import CompilationTarget
 from std.ffi import c_int, external_call, get_errno, ErrNo
 from std.utils import StaticTuple
-from std.memory import MutPointer, ImmutPointer
+from std.memory import MutPointer, ImmPointer
 
 
 # C types
@@ -16,19 +16,17 @@ comptime time_t = Int64
 """C time type."""
 comptime suseconds_t = Int64
 """C microsecond time type."""
-comptime MutExternalPointer = MutUnsafePointer[origin=MutUntrackedOrigin, ...]
+comptime MutExternalPointer[T: AnyType] = MutPointer[T=T, origin=MutUntrackedOrigin, address_space=AddressSpace.GENERIC]
 """A mutable external pointer type.
 
 Parameters:
-    type: The pointee type of the pointer.
-    address_space: The address space the pointee is in.
+    T: The pointee type of the pointer.
 """
-comptime ImmutExternalPointer = ImmutUnsafePointer[origin=ImmutUntrackedOrigin, ...]
+comptime ImmExternalPointer[T: AnyType] = ImmPointer[T=T, origin=ImmUntrackedOrigin, address_space=AddressSpace.GENERIC]
 """An immutable external pointer type.
 
 Parameters:
-    type: The pointee type of the pointer.
-    address_space: The address space the pointee is in.
+    T: The pointee type of the pointer.
 """
 
 comptime tcflag_t = SIMD[(DType.uint32, DType.uint64)[Int(CompilationTarget.is_macos())], 1]
@@ -291,8 +289,8 @@ def tcgetattr[origin: MutOrigin, //](fd: c_int, termios_p: MutPointer[Termios, o
 
 
 def tcsetattr[
-    origin: ImmutOrigin
-](fd: c_int, optional_actions: c_int, termios_p: ImmutPointer[Termios, origin]) -> c_int:
+    origin: ImmOrigin, //
+](fd: c_int, optional_actions: c_int, termios_p: ImmPointer[Termios, origin]) -> c_int:
     """Libc POSIX `tcsetattr` function.
 
     Set the parameters associated with the terminal referred to by the file descriptor `fd`.
@@ -316,7 +314,7 @@ def tcsetattr[
     #### Notes:
     Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html.
     """
-    return external_call["tcsetattr", c_int, c_int, c_int, ImmutPointer[Termios, origin]](
+    return external_call["tcsetattr", c_int, c_int, c_int, ImmPointer[Termios, origin]](
         fd, optional_actions, termios_p
     )
 
@@ -449,7 +447,7 @@ def cfmakeraw[origin: MutOrigin](termios_p: Pointer[mut=True, Termios, origin]):
 #         self.ws_ypixel = 0
 
 
-# def tcgetwinsize(fd: c_int, winsize_p: UnsafePointer[winsize]) -> c_int:
+# def tcgetwinsize(fd: c_int, winsize_p: Pointer[winsize]) -> c_int:
 #     """Libc POSIX `tcgetwinsize` function
 #     Reference: https://man.netbsd.org/tcgetwinsize.3
 #     def signature: int tcgetwinsize(int fd, struct winsize *gws).
@@ -458,10 +456,10 @@ def cfmakeraw[origin: MutOrigin](termios_p: Pointer[mut=True, Termios, origin]):
 #         fd: File descriptor.
 #         winsize_p: Pointer to a winsize struct.
 #     """
-#     return external_call["tcgetwinsize", c_int, c_int, UnsafePointer[winsize]](fd, winsize_p)
+#     return external_call["tcgetwinsize", c_int, c_int, Pointer[winsize]](fd, winsize_p)
 
 
-# def tcsetwinsize(fd: c_int, winsize_p: UnsafePointer[winsize]) -> c_int:
+# def tcsetwinsize(fd: c_int, winsize_p: Pointer[winsize]) -> c_int:
 #     """Libc POSIX `tcgetwinsize` function
 #     Reference: https://man.netbsd.org/tcsetwinsize.3
 #     def signature: int tcsetwinsize(int fd, const struct winsize *sws).
@@ -470,4 +468,4 @@ def cfmakeraw[origin: MutOrigin](termios_p: Pointer[mut=True, Termios, origin]):
 #         fd: File descriptor.
 #         winsize_p: Pointer to a winsize struct.
 #     """
-#     return external_call["tcsetwinsize", c_int, c_int, UnsafePointer[winsize]](fd, winsize_p)
+#     return external_call["tcsetwinsize", c_int, c_int, Pointer[winsize]](fd, winsize_p)
