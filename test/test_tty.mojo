@@ -5,6 +5,7 @@ These exercise the pure `Termios`-mutating functions (`cfmakeraw`,
 """
 from std.testing import assert_equal, TestSuite
 
+import termios
 from termios import c
 from termios.c import ControlFlag, InputFlag, LocalFlag, OutputFlag, SpecialCharacter
 from termios.tty import cfmakeraw, cfmakecbreak
@@ -106,6 +107,30 @@ def test_cfmakecbreak_sets_min_and_time() raises:
     cfmakecbreak(mode)
     assert_equal(mode.c_cc[SpecialCharacter.VMIN.value], 1)
     assert_equal(mode.c_cc[SpecialCharacter.VTIME.value], 0)
+
+
+def test_public_api_is_reachable_from_the_package() raises:
+    """Regression: `is_terminal_raw` was missing from `termios/__init__.mojo`.
+
+    These references fail to compile if a name is dropped from the package's
+    public surface, which is the point — callers should not need to reach into
+    `termios.tty` or `termios.terminal` directly.
+    """
+    comptime _ = termios.is_terminal_raw
+    comptime _ = termios.set_raw
+    comptime _ = termios.set_cbreak
+    comptime _ = termios.cfmakeraw
+    comptime _ = termios.cfmakecbreak
+    comptime _ = termios.tcgetattr
+    comptime _ = termios.tcsetattr
+    comptime _ = termios.tcflush
+    comptime _ = termios.tcflow
+    comptime _ = termios.tcdrain
+    comptime _ = termios.tcsendbreak
+    comptime _ = termios.FlowOption
+    comptime _ = termios.FlushOption
+    comptime _ = termios.WhenOption
+    comptime _ = termios.Termios
 
 
 def main() raises:

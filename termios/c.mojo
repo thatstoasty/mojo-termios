@@ -10,8 +10,8 @@ comptime c_void = NoneType
 """C void type."""
 comptime cc_t = UInt8
 """C control character type."""
-comptime NCCS = Int8
-"""Number of control characters."""
+comptime NCCS = 20 if CompilationTarget.is_macos() else 32
+"""Number of control characters in `Termios.c_cc`."""
 comptime time_t = Int64
 """C time type."""
 comptime suseconds_t = Int64
@@ -31,8 +31,8 @@ Parameters:
 
 comptime tcflag_t = SIMD[(DType.uint32, DType.uint64)[Int(CompilationTarget.is_macos())], 1]
 """If `CompilationTarget.is_macos()` is true, use `UInt64`, otherwise use `UInt32`."""
-comptime c_speed_t = UInt64
-"""C speed type."""
+comptime c_speed_t = SIMD[(DType.uint32, DType.uint64)[Int(CompilationTarget.is_macos())], 1]
+"""C speed type. `unsigned long` on macOS, `unsigned int` on Linux."""
 
 # Constants
 comptime _NSEC_PER_USEC = 1000
@@ -91,8 +91,8 @@ struct ControlFlag(TrivialRegisterPassable):
     """Enable parity generation on output and parity checking on input."""
     comptime CSIZE = Self(768) if CompilationTarget.is_macos() else Self(48)
     """Character size mask."""
-    comptime CS8 = Self(768)
-    """8 bits per byte."""
+    comptime CS8 = Self(768) if CompilationTarget.is_macos() else Self(48)
+    """8 bits per byte. This is `CSIZE` on both platforms, i.e. every size bit set."""
 
 
 @fieldwise_init
@@ -229,9 +229,18 @@ struct SpecialCharacter(TrivialRegisterPassable):
 
 @fieldwise_init
 struct Termios(TrivialRegisterPassable, Writable):
-    """Termios libc."""
+    """Termios libc.
 
-    comptime _CONTROL_CHARACTER_WIDTH = 20 if CompilationTarget.is_macos() else 32
+    #### Notes:
+    The field order and widths mirror the platform's C `struct termios` exactly,
+    because this is passed by pointer to `tcgetattr`/`tcsetattr`. Linux's glibc
+    struct carries a `cc_t c_line` line-discipline byte between `c_lflag` and
+    `c_cc` which macOS does not have; `_c_line` reserves it, and is zero-width
+    on macOS so the layout stays correct on both.
+    """
+
+    comptime _CONTROL_CHARACTER_WIDTH = NCCS
+    comptime _LINE_DISCIPLINE_WIDTH = 0 if CompilationTarget.is_macos() else 1
 
     var c_iflag: tcflag_t
     """Input mode flags."""
@@ -241,6 +250,8 @@ struct Termios(TrivialRegisterPassable, Writable):
     """Control mode flags."""
     var c_lflag: tcflag_t
     """Local mode flags."""
+    var _c_line: StaticTuple[cc_t, Self._LINE_DISCIPLINE_WIDTH]
+    """Line discipline. Linux only; zero-width padding on macOS."""
     var c_cc: StaticTuple[cc_t, Self._CONTROL_CHARACTER_WIDTH]
     """Special control characters."""
     var c_ispeed: c_speed_t
@@ -253,6 +264,10 @@ struct Termios(TrivialRegisterPassable, Writable):
         self.c_cc = StaticTuple[cc_t, Self._CONTROL_CHARACTER_WIDTH]()
         comptime for n in range(Self._CONTROL_CHARACTER_WIDTH):
             self.c_cc[n] = 0
+
+        self._c_line = StaticTuple[cc_t, Self._LINE_DISCIPLINE_WIDTH]()
+        comptime for n in range(Self._LINE_DISCIPLINE_WIDTH):
+            self._c_line[n] = 0
 
         self.c_cflag = 0
         self.c_lflag = 0
@@ -314,9 +329,7 @@ def tcsetattr[
     #### Notes:
     Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html.
     """
-    return external_call["tcsetattr", c_int, c_int, c_int, ImmPointer[Termios, origin]](
-        fd, optional_actions, termios_p
-    )
+    return external_call["tcsetattr", c_int, c_int, c_int, ImmPointer[Termios, origin]](fd, optional_actions, termios_p)
 
 
 def tcsendbreak(fd: c_int, duration: c_int) -> c_int:
@@ -410,7 +423,7 @@ def tcflow(fd: c_int, action: c_int) -> c_int:
     return external_call["tcflow", c_int, c_int, c_int](fd, action)
 
 
-def cfmakeraw[origin: MutOrigin](termios_p: Pointer[mut=True, Termios, origin]):
+def cfmakeraw[origin: MutOrigin, //](termios_p: MutPointer[Termios, origin]):
     """Libc POSIX `cfmakeraw` function.
 
     Set the terminal attributes to raw mode.
@@ -429,7 +442,7 @@ def cfmakeraw[origin: MutOrigin](termios_p: Pointer[mut=True, Termios, origin]):
     #### Notes:
     Reference: https://man7.org/linux/man-pages/man3/cfmakeraw.3.html.
     """
-    external_call["cfmakeraw", c_void, Pointer[mut=True, Termios, origin]](termios_p)
+    external_call["cfmakeraw", c_void, MutPointer[Termios, origin]](termios_p)
 
 
 # @fieldwise_init

@@ -24,7 +24,7 @@ There's two ways to build `termios` from source: directly from the Git repositor
 Run the following commands in your terminal:
 
 ```bash
-pixi add termios -g "https://github.com/thatstoasty/mojo-termios.git" --tag "v0.1.1" && pixi install
+pixi add termios -g "https://github.com/thatstoasty/mojo-termios.git" --tag "v0.2.0" && pixi install
 ```
 
 #### Building from source: Local

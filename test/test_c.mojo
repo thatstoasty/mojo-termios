@@ -21,9 +21,18 @@ def test_termios_default_control_chars_zeroed() raises:
         assert_equal(mode.c_cc[n], 0)
 
 
-def test_cs8_is_platform_independent() raises:
-    # CS8 is defined as 768 on every platform.
-    assert_equal(ControlFlag.CS8.value, 768)
+def test_cs8_is_platform_specific() raises:
+    # CS8 is 0o1400 on macOS but 0o60 on Linux. See test_libc_abi.mojo for the
+    # check against the platform's own headers.
+    comptime if c.CompilationTarget.is_macos():
+        assert_equal(ControlFlag.CS8.value, 768)
+    else:
+        assert_equal(ControlFlag.CS8.value, 48)
+
+
+def test_cs8_fills_the_character_size_mask() raises:
+    # On both platforms CS8 is every bit of CSIZE, i.e. the widest size.
+    assert_equal(ControlFlag.CS8.value, ControlFlag.CSIZE.value)
 
 
 def test_opost_flag_value() raises:

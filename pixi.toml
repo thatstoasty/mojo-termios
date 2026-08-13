@@ -12,7 +12,6 @@ preview = ["pixi-build"]
 
 [tasks]
 tests = "sh -c 'find test -name \"test_*.mojo\" -exec mojo -D ASSERT=all -I . {} \\;'"
-examples = "sh -c 'find examples -name \"*.mojo\" -exec mojo -D ASSERT=all -I . {} \\;'"
 
 # Linting and Formatting
 lint_docs = "mojo doc --Werror --diagnose-missing-doc-strings -o /dev/null ./termios"
@@ -21,13 +20,14 @@ format = [{ task = "mojo_format" }]
 
 [package]
 name = "termios"
-version = "0.1.1"
+version = "0.2.0"
 
 [package.build]
 backend = { name = "pixi-build-mojo", version = "0.1.*" }
 
 [dependencies]
 mojo = ">=1.0.0,<1.1.0"
+python = "*"
 
 [package.host-dependencies]
 mojo-compiler = ">=1.0.0,<1.1.0"

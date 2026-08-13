@@ -24,31 +24,31 @@ struct WhenOption(TrivialRegisterPassable, Writable):
 
 @fieldwise_init
 struct FlowOption(TrivialRegisterPassable, Writable):
-    """TTY flow values."""
+    """TTY flow control actions, for use with `tcflow`."""
 
     var value: Int32
     """Value for the option."""
     comptime TCOOFF = Self(1) if CompilationTarget.is_macos() else Self(0)
     """Suspends output."""
     comptime TCOON = Self(2) if CompilationTarget.is_macos() else Self(1)
+    """Restarts suspended output."""
+    comptime TCIOFF = Self(3) if CompilationTarget.is_macos() else Self(2)
     """Transmits a STOP character, which stops the terminal device from transmitting data to the system."""
-    comptime TCOFLUSH = Self(2) if CompilationTarget.is_macos() else Self(1)
+    comptime TCION = Self(4) if CompilationTarget.is_macos() else Self(3)
     """Transmits a START character, which starts the terminal device transmitting data to the system."""
-    comptime TCIOFLUSH = Self(3) if CompilationTarget.is_macos() else Self(2)
-    """Flushes both data received but not read, and data written but not transmitted."""
 
 
 @fieldwise_init
 struct FlushOption(TrivialRegisterPassable, Writable):
-    """TTY flow values."""
+    """TTY queue selectors, for use with `tcflush`."""
 
     var value: Int32
     """Value for the option."""
-    comptime TCIFLUSH = Self(0)
+    comptime TCIFLUSH = Self(1) if CompilationTarget.is_macos() else Self(0)
     """Flushes data received, but not read."""
-    comptime TCOFLUSH = Self(1)
+    comptime TCOFLUSH = Self(2) if CompilationTarget.is_macos() else Self(1)
     """Flushes data written, but not transmitted."""
-    comptime TCIOFLUSH = Self(2)
+    comptime TCIOFLUSH = Self(3) if CompilationTarget.is_macos() else Self(2)
     """Flushes both data received, but not read. And data written, but not transmitted."""
 
 
@@ -125,7 +125,7 @@ def tcdrain(file: FileDescriptor) raises ErrNo -> None:
         raise get_errno()
 
 
-def tcflush(file: FileDescriptor, queue_selector: FlushOption) raises -> None:
+def tcflush(file: FileDescriptor, queue_selector: FlushOption) raises ErrNo -> None:
     """Discard queued data on file descriptor `file`.
 
     Args:
@@ -154,7 +154,7 @@ def tcflow(file: FileDescriptor, action: FlowOption) raises ErrNo -> None:
 
     Raises:
         * ErrNo: If the status returned from `tcflow` != 0.
-    
+
     #### Notes:
     * `FlowOption.TCOOFF`: Suspends output.
     * `FlowOption.TCOON`: Restarts suspended output.

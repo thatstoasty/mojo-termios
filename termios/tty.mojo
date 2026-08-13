@@ -100,7 +100,7 @@ def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raise
         ErrNo: If getting or setting terminal attributes fails via C's `tcgetattr` or `tcsetattr`.
 
     Returns:
-        The original terminal attributes, and an error if any.
+        The original terminal attributes, so the caller can restore them later.
     """
     var mode = tcgetattr(file)
     var new = mode.copy()
@@ -121,7 +121,7 @@ def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) ra
         ErrNo: If getting or setting terminal attributes fails via C's `tcgetattr` or `tcsetattr`.
 
     Returns:
-        The original terminal attributes, and an error if any.
+        The original terminal attributes, so the caller can restore them later.
     """
     var mode = tcgetattr(file)
     var new = mode.copy()
@@ -142,6 +142,12 @@ def is_terminal_raw(file_descriptor: FileDescriptor) raises ErrNo -> Bool:
 
     Returns:
         True if the terminal is in raw mode, False otherwise.
+
+    #### Notes:
+    This tests that canonical input processing and echoing are both off, which
+    is what distinguishes a non-cooked terminal. A terminal put into cbreak mode
+    by `set_cbreak` also satisfies this, since cbreak clears the same two flags.
     """
     var state = tcgetattr(file_descriptor)
-    return (state.c_lflag & LocalFlag.ICANON.value) and not (state.c_lflag & LocalFlag.ECHO.value)
+    # Raw mode clears both canonical input processing and echoing.
+    return (state.c_lflag & LocalFlag.ICANON.value) == 0 and (state.c_lflag & LocalFlag.ECHO.value) == 0
