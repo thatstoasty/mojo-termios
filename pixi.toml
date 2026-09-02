@@ -20,10 +20,10 @@ format = [{ task = "mojo_format" }]
 
 [package]
 name = "termios"
-version = "0.2.0"
+version = "0.2.1"
 
 [package.build]
-backend = { name = "pixi-build-mojo", version = "0.1.*" }
+backend = { name = "pixi-build-mojo", version = "0.*" }
 
 [dependencies]
 mojo = ">=1.0.0,<1.1.0"
