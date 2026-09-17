@@ -1,6 +1,6 @@
 """POSIX terminal attribute control via `tcgetattr`/`tcsetattr` wrappers."""
 import std.sys._libc as libc
-from std.sys import CompilationTarget
+from std.sys.info import platform_map
 from std.ffi import get_errno, ErrNo
 
 from termios import c
@@ -28,13 +28,13 @@ struct FlowOption(TrivialRegisterPassable, Writable):
 
     var value: Int32
     """Value for the option."""
-    comptime TCOOFF = Self(1) if CompilationTarget.is_macos() else Self(0)
+    comptime TCOOFF = platform_map[macos=Self(1), linux=Self(0)]()
     """Suspends output."""
-    comptime TCOON = Self(2) if CompilationTarget.is_macos() else Self(1)
+    comptime TCOON = platform_map[macos=Self(2), linux=Self(1)]()
     """Restarts suspended output."""
-    comptime TCIOFF = Self(3) if CompilationTarget.is_macos() else Self(2)
+    comptime TCIOFF = platform_map[macos=Self(3), linux=Self(2)]()
     """Transmits a STOP character, which stops the terminal device from transmitting data to the system."""
-    comptime TCION = Self(4) if CompilationTarget.is_macos() else Self(3)
+    comptime TCION = platform_map[macos=Self(4), linux=Self(3)]()
     """Transmits a START character, which starts the terminal device transmitting data to the system."""
 
 
@@ -44,11 +44,11 @@ struct FlushOption(TrivialRegisterPassable, Writable):
 
     var value: Int32
     """Value for the option."""
-    comptime TCIFLUSH = Self(1) if CompilationTarget.is_macos() else Self(0)
+    comptime TCIFLUSH = platform_map[macos=Self(1), linux=Self(0)]()
     """Flushes data received, but not read."""
-    comptime TCOFLUSH = Self(2) if CompilationTarget.is_macos() else Self(1)
+    comptime TCOFLUSH = platform_map[macos=Self(2), linux=Self(1)]()
     """Flushes data written, but not transmitted."""
-    comptime TCIOFLUSH = Self(3) if CompilationTarget.is_macos() else Self(2)
+    comptime TCIOFLUSH = platform_map[macos=Self(3), linux=Self(2)]()
     """Flushes both data received, but not read. And data written, but not transmitted."""
 
 
