@@ -20,20 +20,20 @@ format = [{ task = "mojo_format" }]
 
 [package]
 name = "termios"
-version = "0.2.1"
+version = "0.2.2"
 
 [package.build]
 backend = { name = "pixi-build-mojo", version = "0.*" }
 
 [dependencies]
-mojo = ">=1.0.0,<1.1.0"
+mojo = ">=1.1.0,<1.2.0"
 python = "*"
 
 [package.host-dependencies]
-mojo-compiler = ">=1.0.0,<1.1.0"
+mojo-compiler = ">=1.1.0,<1.2.0"
 
 [package.build-dependencies]
-mojo-compiler = ">=1.0.0,<1.1.0"
+mojo-compiler = ">=1.1.0,<1.2.0"
 
 [package.run-dependencies]
-mojo-compiler = ">=1.0.0,<1.1.0"
+mojo-compiler = ">=1.1.0,<1.2.0"
