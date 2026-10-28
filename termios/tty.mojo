@@ -1,5 +1,6 @@
 """Helpers for putting a TTY into raw or cbreak mode."""
 from std.ffi import ErrNo, external_call
+from std.io import RawFileDescriptor
 from termios import c
 from termios.c import ControlFlag, InputFlag, LocalFlag, OutputFlag, SpecialCharacter
 from termios.terminal import FlowOption, FlushOption, WhenOption, tcgetattr, tcsetattr
@@ -89,7 +90,7 @@ def cfmakecbreak(mut mode: c.Termios):
     mode.c_cc[SpecialCharacter.VTIME.value] = 0
 
 
-def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises ErrNo -> c.Termios:
+def set_raw(file: RawFileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises ErrNo -> c.Termios:
     """Set terminal to raw mode.
 
     Args:
@@ -110,7 +111,7 @@ def set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raise
     return mode
 
 
-def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises ErrNo -> c.Termios:
+def set_cbreak(file: RawFileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises ErrNo -> c.Termios:
     """Set terminal to cbreak mode.
 
     Args:
@@ -131,7 +132,7 @@ def set_cbreak(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) ra
     return mode
 
 
-def is_terminal_raw(file_descriptor: FileDescriptor) raises ErrNo -> Bool:
+def is_terminal_raw(file_descriptor: RawFileDescriptor) raises ErrNo -> Bool:
     """Checks if a terminal is in raw mode.
 
     Args:
