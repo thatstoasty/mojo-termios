@@ -1,5 +1,6 @@
 """POSIX terminal attribute control via `tcgetattr`/`tcsetattr` wrappers."""
 import std.sys._libc as libc
+from std.io import RawFileDescriptor
 from std.sys.info import platform_map
 from std.ffi import get_errno, ErrNo
 
@@ -52,7 +53,7 @@ struct FlushOption(TrivialRegisterPassable, Writable):
     """Flushes both data received, but not read. And data written, but not transmitted."""
 
 
-def tcgetattr(file: FileDescriptor) raises ErrNo -> c.Termios:
+def tcgetattr(file: RawFileDescriptor) raises ErrNo -> c.Termios:
     """Return the tty attributes for file descriptor.
     This is a wrapper around `c.tcgetattr()`.
 
@@ -73,7 +74,7 @@ def tcgetattr(file: FileDescriptor) raises ErrNo -> c.Termios:
     return terminal_attributes
 
 
-def tcsetattr(file: FileDescriptor, optional_actions: WhenOption, terminal_attributes: c.Termios) raises ErrNo -> None:
+def tcsetattr(file: RawFileDescriptor, optional_actions: WhenOption, terminal_attributes: c.Termios) raises ErrNo -> None:
     """Set the tty attributes for file descriptor `file` from the attributes,
     which is a list like the one returned by c.tcgetattr(). The when argument determines when the attributes are changed:
     This is a wrapper around `c.tcsetattr()`.
@@ -95,7 +96,7 @@ def tcsetattr(file: FileDescriptor, optional_actions: WhenOption, terminal_attri
         raise get_errno()
 
 
-def tcsendbreak(file: FileDescriptor, duration: c.c_int) raises ErrNo -> None:
+def tcsendbreak(file: RawFileDescriptor, duration: c.c_int) raises ErrNo -> None:
     """Send a break on file descriptor `file`.
     A zero duration sends a break for 0.25 - 0.5 seconds; a nonzero duration has a system dependent meaning.
 
@@ -112,7 +113,7 @@ def tcsendbreak(file: FileDescriptor, duration: c.c_int) raises ErrNo -> None:
         raise get_errno()
 
 
-def tcdrain(file: FileDescriptor) raises ErrNo -> None:
+def tcdrain(file: RawFileDescriptor) raises ErrNo -> None:
     """Wait until all output written to the object referred to by `file` has been transmitted.
 
     Args:
@@ -125,7 +126,7 @@ def tcdrain(file: FileDescriptor) raises ErrNo -> None:
         raise get_errno()
 
 
-def tcflush(file: FileDescriptor, queue_selector: FlushOption) raises ErrNo -> None:
+def tcflush(file: RawFileDescriptor, queue_selector: FlushOption) raises ErrNo -> None:
     """Discard queued data on file descriptor `file`.
 
     Args:
@@ -145,7 +146,7 @@ def tcflush(file: FileDescriptor, queue_selector: FlushOption) raises ErrNo -> N
         raise get_errno()
 
 
-def tcflow(file: FileDescriptor, action: FlowOption) raises ErrNo -> None:
+def tcflow(file: RawFileDescriptor, action: FlowOption) raises ErrNo -> None:
     """Suspend or resume input or output on file descriptor `file`.
 
     Args:

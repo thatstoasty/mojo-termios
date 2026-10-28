@@ -7,6 +7,7 @@ terminal. Attributes set through this library are read back with CPython's
 one: if the `Termios` struct layout drifted from the platform's C struct, the
 flag and control-character comparisons below would disagree.
 """
+from std.io import RawFileDescriptor
 from std.python import Python, PythonObject
 from std.testing import assert_equal, assert_false, assert_true, TestSuite
 
@@ -27,9 +28,9 @@ struct _Pty(Movable):
     """
 
     var _os: PythonObject
-    var master: Int
+    var master: Int32
     """The master side file descriptor."""
-    var slave: Int
+    var slave: Int32
     """The slave side file descriptor, i.e. the terminal itself."""
 
     def __init__(out self) raises:
@@ -40,8 +41,8 @@ struct _Pty(Movable):
         """
         self._os = Python.import_module("os")
         var pair = self._os.openpty()
-        self.master = Int(py=pair[0])
-        self.slave = Int(py=pair[1])
+        self.master = Int32(py=pair[0])
+        self.slave = Int32(py=pair[1])
 
     def __deinit__(deinit self):
         """Closes both ends of the pair."""
@@ -51,16 +52,16 @@ struct _Pty(Movable):
         except:
             pass
 
-    def fd(self) -> FileDescriptor:
+    def fd(self) -> RawFileDescriptor:
         """Returns the slave file descriptor, i.e. the terminal itself.
 
         Returns:
             The slave side file descriptor.
         """
-        return FileDescriptor(self.slave)
+        return RawFileDescriptor(self.slave)
 
 
-def _reference_attributes(fd: Int) raises -> PythonObject:
+def _reference_attributes(fd: Int32) raises -> PythonObject:
     """Reads the terminal attributes via CPython, as `[if, of, cf, lf, isp, osp, cc]`.
 
     Control characters are normalised to `Int`, since CPython yields `bytes`
